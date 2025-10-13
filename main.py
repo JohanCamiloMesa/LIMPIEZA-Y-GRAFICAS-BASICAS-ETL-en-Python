@@ -1,56 +1,34 @@
 # Importaciones de clases del proyecto
-from Extract.ETLpremierExtract import SpotifyandYoutubeExtract
-from Transform.ETLpremierClean import SpotifyandYoutubeClean
-from Config.config import Config
-from Load.loader import Loader
-from Extract.Graphic.ETLpremierGraphic import (
-	grafica_promedio_goles_liverpool,
-	grafica_promedio_tarjetas_por_equipo,
-	grafica_promedio_goles_por_equipo
-)
+from Extract.LimpiezaExtract import LimpiezaExtract
+from Transform.LimpiezaTransform import full_clean_stock_sentiment
+from Config.LimpiezaConfig import LimpiezaConfig
+from Load.LimpiezaLoader import LimpiezaLoader
 
-# Extracción de datos
-extractor = SpotifyandYoutubeExtract(Config.INPUT_PATH)
-extractor.queries()
-df = extractor.data
 
-# Mostrar el dataset original completo antes de la limpieza
-print("\n--- DATASET ORIGINAL ---\n")
-print(df)
+def run_pipeline():
+	# Extracción
+	extractor = LimpiezaExtract(LimpiezaConfig.INPUT_PATH)
+	extractor.queries()
+	df = extractor.data
 
-# Limpieza de datos
+	print("\n--- DATASET ORIGINAL (primeras 5 filas) ---\n")
+	print(df.head(5))
 
-# Limpieza de datos
-limpieza = SpotifyandYoutubeClean(df)
-resultados_nulos_ceros = limpieza.verificar_nulos_ceros()
-print("\n--- NULOS Y CEROS POR COLUMNA ---\n")
-print(resultados_nulos_ceros)
+	# Transformación / limpieza completa
+	print("\n--- INICIANDO LIMPIEZA ---\n")
+	df_clean = full_clean_stock_sentiment(df)
+	summary = df_clean.attrs.get('cleaning_summary', {})
+	print('Resumen de limpieza:', summary)
+	print('\n--- DATASET LIMPIO (primeras 5 filas) ---\n')
+	print(df_clean.head(5))
 
-# Eliminar equipos específicos antes de limpiar columnas
-equipos_a_eliminar = ['Brighton & Hove Albion', 'Ipswich Town']
-df_sin_equipos = limpieza.eliminar_equipos(equipos_a_eliminar)
+	# Cargar / Guardar
+	loader = LimpiezaLoader(df_clean)
+	print(f"Guardando CSV limpio en: {LimpiezaConfig.OUTPUT_PATH}")
+	loader.to_csv(LimpiezaConfig.OUTPUT_PATH)
+	print(f"Guardando en SQLite: {LimpiezaConfig.SQLITE_DB_PATH} (tabla: {LimpiezaConfig.SQLITE_TABLE})")
+	loader.to_sqlite(str(LimpiezaConfig.SQLITE_DB_PATH), LimpiezaConfig.SQLITE_TABLE)
 
-limpieza_final = SpotifyandYoutubeClean(df_sin_equipos)
-df_limpio = limpieza_final.limpiar_columnas()
-print("\n--- DATASET LIMPIO ---\n")
-print(df_limpio)
 
-# Guardar el DataFrame limpio en la ruta de salida configurada
-loader = Loader(df_limpio)
-loader.to_csv(Config.OUTPUT_PATH)
-
-# Mostrar el DataFrame de nulos y ceros del dataset limpio
-print("\n--- NULOS Y CEROS EN DATASET LIMPIO ---\n")
-resultados_nulos_ceros_limpio = SpotifyandYoutubeClean(df_limpio).verificar_nulos_ceros()
-print(resultados_nulos_ceros_limpio)
-
-# Carga a SQLite
-print("\n--- CARGANDO DATOS A SQLITE ---\n")
-loader.to_sqlite()
-
-# Mostrar gráficas al final
-
-print("\n--- MOSTRANDO GRÁFICAS ---\n")
-grafica_promedio_goles_liverpool(df_limpio, guardar=True)
-grafica_promedio_tarjetas_por_equipo(df_limpio, guardar=True)
-grafica_promedio_goles_por_equipo(df_limpio, guardar=True)
+if __name__ == '__main__':
+	run_pipeline()

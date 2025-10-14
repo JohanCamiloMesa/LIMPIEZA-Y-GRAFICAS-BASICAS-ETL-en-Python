@@ -77,20 +77,53 @@ def plot_label_distribution(df: pd.DataFrame, out_dir: Path, show: bool = True):
 
 
 def plot_top_tokens_frequency(df: pd.DataFrame, out_dir: Path, top_n=20, show: bool = True):
-    """Cuenta frecuencia de tokens en Top1..Top5 y muestra top N tokens (barras)."""
-    text_cols = [c for c in df.columns if c.lower().startswith('top')][:5]
-    all_text = df[text_cols].fillna('').astype(str).agg(' '.join, axis=1)
-    # tokenizar simple por comas y espacios
-    tokens = all_text.str.replace(',', ' ').str.split() .explode()
-    tokens = tokens.str.lower().str.replace(r"[^a-z0-9áéíóúñ']+", '', regex=True)
-    tokens = tokens.replace('', np.nan).dropna()
-    freq = tokens.value_counts().nlargest(top_n)
-    plt.figure(figsize=(10, 6))
-    sns.barplot(x=freq.values, y=freq.index, palette='viridis')
-    plt.title(f'Top {top_n} tokens in Top1..Top5')
-    plt.xlabel('Frequency')
+    """Gráfica: barras agrupadas por año con el conteo de cada Label.
+
+    Para cada año presente en `Date` cuenta cuántos registros de cada `Label`
+    existen y los muestra como barras agrupadas (una barra por label dentro de
+    cada año).
+    """
+    df2 = df.copy()
+    df2['Date'] = pd.to_datetime(df2['Date'], errors='coerce')
+    df2 = df2.dropna(subset=['Date'])
+    if 'Label' not in df2.columns:
+        raise ValueError('No existe la columna "Label" en el DataFrame')
+
+    df2['year'] = df2['Date'].dt.year
+
+    # Agrupar por año y label
+    counts = df2.groupby(['year', 'Label']).size().unstack(fill_value=0)
+    if counts.empty:
+        raise ValueError('No se encontraron datos para agrupar por año y Label')
+
+    # Ordenar años
+    counts = counts.sort_index()
+
+    years = counts.index.astype(int).tolist()
+    labels = counts.columns.tolist()
+
+    x = np.arange(len(years))
+    n_labels = max(1, len(labels))
+    width = min(0.8, 0.8 / n_labels)
+
+    plt.figure(figsize=(12, 6))
+    for i, lab in enumerate(labels):
+        vals = counts[lab].values
+        plt.bar(x + i * width, vals, width=width, label=str(lab))
+
+    plt.xlabel('Año')
+    plt.ylabel('Conteo')
+    plt.title('Conteo de Labels por año (barras agrupadas)')
+    # Centrar ticks entre grupos
+    if n_labels > 0:
+        plt.xticks(x + (n_labels - 1) * width / 2, years, rotation=45)
+    else:
+        plt.xticks(x, years, rotation=45)
+
+    plt.legend(title='Label')
     plt.tight_layout()
-    out = Path(out_dir) / '03_top_tokens_top1-5.png'
+
+    out = Path(out_dir) / '03_label_by_year_grouped.png'
     out.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(out)
     if show:

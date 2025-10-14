@@ -1,43 +1,41 @@
-# LIMPIEZA Y GRÁFICAS BÁSICAS - ETL en Python
+# 📰 LIMPIEZA Y GRÁFICAS BÁSICAS 📰 ETL en Python 🐍
 
 ## Descripción del proyecto
 Este repositorio contiene un pipeline ETL (Extract, Transform, Load) en Python diseñado para limpiar y analizar un dataset de sentimientos sobre acciones. El pipeline extrae los datos desde CSV, aplica transformaciones y limpieza, guarda un CSV limpio y lo inserta en una base SQLite, y genera gráficas EDA (exploratory data analysis).
 
-## Estructura del proyecto
+## 📁 Estructura del proyecto
 
 ```
 ├── LICENSE
-├── main.py                     # Punto de entrada del pipeline
+├── main.py                                 # Punto de entrada del pipeline
 ├── README.md
-├── requirements.txt            # Dependencias del proyecto
+├── requirements.txt                        # Dependencias del proyecto
 ├── Config/
 │   ├── __init__.py
-│   └── LimpiezaConfig.py       # Configuración (rutas, SQLite)
+│   └── LimpiezaConfig.py                   # Configuración (rutas, SQLite)
 ├── Extract/
 │   ├── __init__.py
-│   ├── LimpiezaExtract.py      # Lectura / queries iniciales
+│   ├── LimpiezaExtract.py                  # Lectura / queries iniciales
 │   ├── Files/
-│   │   ├── output_clean.csv    # CSV limpio (generado)
-│   │   └── stock_senti_analysis.csv  # CSV origen
-+│   └── Graphic/
-│       └── LimpiezaGraphic.py  # Generación de gráficas EDA
+│   │   ├── output_clean.csv                # CSV limpio (generado)
+│   │   └── stock_senti_analysis.csv        # CSV origen
+│   └── Graphic/
+│       └── LimpiezaGraphic.py              # Generación de gráficas EDA
 ├── Transform/
 │   ├── __init__.py
-│   └── LimpiezaTransform.py    # Funciones de limpieza/transformación
+│   └── LimpiezaTransform.py                # Funciones de limpieza/transformación
 ├── Load/
 │   ├── __init__.py
-│   └── LimpiezaLoader.py       # Guardado a CSV y SQLite
+│   └── LimpiezaLoader.py                   # Guardado a CSV y SQLite
 ├── Docs/
-│   ├── etl_flow.svg
-│   ├── project_structure.svg
-│   ├── 01_label_time_series.png
-│   ├── 02_label_distribution.png
-│   ├── 03_label_by_year_grouped.png
-│   ├── 04_top_words_by_position.png
-│   └── 05_titles_per_month_2000.png
+    ├── 01_label_time_series.png
+    ├── 02_label_distribution.png
+    ├── 03_label_by_year_grouped.png
+    ├── 04_top_words_by_position.png
+    └── 05_titles_per_month_2000.png
 ```
 
-## Diagrama simple del flujo ETL
+## ⏳ Diagrama simple del flujo ETL
 
 ```mermaid
 graph TD;
@@ -45,6 +43,12 @@ graph TD;
     B --> C[Load: Guardado CSV y SQLite]
     C --> D[Graphic: Visualización]
 ```
+
+## 🔗 Dataset
+
+El dataset que se utilizo en este proyecto fue creado por Shubham Trivedi, esta disponible en Kaggle:
+
+**[Sentiment Analysis for Dow Jones (DJIA) Stock](https://www.kaggle.com/code/shubhamptrivedi/sentiment-analysis-for-dow-jones-djia-stock/input)**
 
 ## Requisitos
 
@@ -56,7 +60,7 @@ graph TD;
 - seaborn
 - matplotlib
 
-## Instalación rápida (Windows PowerShell)
+## ⤵️ Instalación rápida (Windows PowerShell)
 
 1. Crear y activar un entorno virtual (opcional pero recomendado):
 
@@ -91,37 +95,42 @@ Generar sólo las gráficas (sin correr todo el pipeline):
 python .\Extract\Graphic\LimpiezaGraphic.py
 ```
 
-## Salida y artefactos 
+## 🛑 Salida y artefactos 
 
 - CSV limpio: `Extract/Files/output_clean.csv`
 - Base de datos SQLite: `Extract/Files/Limpieza.db` (tabla `Limpieza_data`)
 - Gráficas: carpeta `Docs/` con archivos PNG (por ejemplo `03_label_by_year_grouped.png`).
 
-## Gráficas generadas
+## 📊 Gráficas generadas
 
 El pipeline genera varias gráficas EDA y las guarda en la carpeta `Docs/`. A continuación se listan las principales imágenes generadas y una breve explicación de cada una. Si abres el repositorio en un visor (por ejemplo VS Code) verás las miniaturas; también puedes abrir los PNG directamente.
 
-1. `01_label_time_series.png` — Heatmap: items no vacíos en Top1..Top25 por año
-	- Qué muestra: un heatmap con los años en el eje Y (por defecto 2000–2016) y las posiciones Top1..Top25 en el eje X. Cada celda contiene el conteo de items no vacíos observados en esa posición Top para el año.
-	- Interpretación: permite ver en qué años y en qué posiciones de Top hubo más información disponible; ayuda a detectar años con poca presencia de artículos o cambios en la cobertura.
+1. ![Gráfica #1](Docs/01_label_time_series.png)
+   - Heatmap: items no vacíos en Top1..Top25 por año
+   - Qué muestra: un heatmap con los años en el eje Y (por defecto 2000–2016) y las posiciones Top1..Top25 en el eje X. Cada celda contiene el conteo de items no vacíos observados en esa posición Top para el año.
+   - Interpretación: permite ver en qué años y en qué posiciones de Top hubo más información disponible; ayuda a detectar años con poca presencia de artículos o cambios en la cobertura.
 
-2. `02_label_distribution.png` — Distribución de la variable `Label` (bar + pie)
+2. ![Gráfica #2](Docs/02_label_distribution.png)
+    - Distribución de la variable `Label` (bar + pie)
 	- Qué muestra: un gráfico de barras con el conteo absoluto por label y un gráfico de pastel con la proporción relativa.
 	- Interpretación: útil para conocer la prevalencia de cada label (por ejemplo: positiva/negativa/neutral) en el dataset completo.
 
-3. `03_label_by_year_grouped.png` — Barras agrupadas: conteo de `Label` por año (nuevo)
+3. ![Gráfica #3](Docs/03_label_by_year_grouped.png)
+    - Barras agrupadas: conteo de `Label` por año (nuevo)
 	- Qué muestra: por cada año, se muestran barras para cada label indicando el número de registros del dataset con ese label en ese año.
 	- Interpretación: permite observar tendencias temporales (años con aumentos de sentimiento positivo/negativo), detectar anomalías o periodos con mayor actividad.
 
-4. `04_top_words_by_position.png` — Heatmap de tokens por posición Top
+4. ![Gráfica #4](Docs/04_top_words_by_position.png)
+    - Heatmap de tokens por posición Top
 	- Qué muestra: un heatmap donde las filas son posiciones Top (Top1..TopN) y las columnas son tokens (top global). Cada celda indica la frecuencia del token en esa posición.
 	- Interpretación: ayuda a identificar palabras que aparecen consistentemente en determinadas posiciones (por ejemplo, si cierto token suele ubicarse en Top1) y puede guiar la creación de features basadas en posición.
 
-5. `05_titles_per_month_2000.png` — Conteo de días con al menos un título por mes (Año 2000)
+5. ![Gráfica #5](Docs/05_titles_per_month_2000.png)
+    - Conteo de días con al menos un título por mes (Año 2000)
 	- Qué muestra: un gráfico de barras con el número de días por mes (enero..diciembre) que tuvieron al menos un título en el año 2000.
 	- Interpretación: específico para el año 2000; útil para análisis temporales y estacionalidad (por ejemplo, meses con mayor cobertura informativa).
 
-## Notas sobre las imágenes
+## 🗒️ Notas sobre las imágenes
 
 - Si alguna gráfica no aparece, revisa que `Docs/` contenga los PNG; el script `main.py` crea esos archivos tras ejecutar la parte gráfica.
 - Para datasets muy grandes o con muchos labels/años, algunas gráficas pueden quedar saturadas: considera filtrar por top-K labels o por un rango de años.
@@ -133,7 +142,7 @@ El pipeline genera varias gráficas EDA y las guarda en la carpeta `Docs/`. A co
 - Load: `LimpiezaLoader` guarda el DataFrame limpio a CSV y lo exporta a SQLite.
 - Graphic: generación de varias gráficas EDA (heatmaps, distribuciones, conteos por año, etc.).
 
-## Brief de resultados (ejemplo)
+## Brief de resultados
 
 Al ejecutar el pipeline sobre el dataset incluido, se obtienen:
 - Un CSV limpio con columnas normalizadas y fechas parseadas (`output_clean.csv`).

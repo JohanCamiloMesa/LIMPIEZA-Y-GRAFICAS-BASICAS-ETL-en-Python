@@ -95,7 +95,117 @@ Generar sólo las gráficas (sin correr todo el pipeline):
 python .\Extract\Graphic\LimpiezaGraphic.py
 ```
 
-## 🛑 Salida y artefactos 
+## � Docker — Construir, ejecutar y depurar
+
+Aquí tienes instrucciones paso a paso (PowerShell) para construir la imagen Docker del proyecto, ejecutar el pipeline con los volúmenes para persistir artefactos y cómo lanzar el contenedor en modo depuración para conectar un IDE (por ejemplo VS Code) usando debugpy.
+
+### 1) Construir la imagen
+
+```powershell
+docker build -t limpieza-etl:latest .
+```
+
+Si quieres una versión fija de Python (recomendado para reproducibilidad), cambia la etiqueta en el `Dockerfile` a `FROM python:3.13-slim` antes de construir.
+
+### 2) Ejecutar (persistir CSV/DB y gráficas en el host)
+
+Este comando monta los directorios `Extract/Files` y `Docs` del host dentro del contenedor para que los artefactos generados persistan.
+
+PowerShell no usa la barra invertida (\) como continuación de línea —usa el backtick ` (acento grave). Aquí tienes dos formas válidas:
+
+- Versión de una sola línea (funciona siempre):
+
+```powershell
+docker run --rm -v "${PWD}\Extract\Files:/app/Extract/Files" -v "${PWD}\Docs:/app/Docs" limpieza-etl:latest
+```
+
+- Versión multilínea válida en PowerShell (usa backtick al final de cada línea):
+
+```powershell
+docker run --rm `
+    -v "${PWD}\Extract\Files:/app/Extract/Files" `
+    -v "${PWD}\Docs:/app/Docs" `
+    limpieza-etl:latest
+```
+
+Notas:
+- `--rm` borra el contenedor al terminar.
+- Si usas Docker Toolbox o rutas Windows especiales, asegúrate de que `${PWD}` esté accesible para Docker; alternativamente usa la ruta absoluta.
+
+### 3) Ejecutar en segundo plano (detached)
+
+```powershell
+# Single-line (recommended for PowerShell)
+docker run -d --name limpieza-etl -v "${PWD}\Extract\Files:/app/Extract/Files" -v "${PWD}\Docs:/app/Docs" limpieza-etl:latest
+
+# Para ver logs
+docker logs -f limpieza-etl
+
+# Para detener y eliminar
+docker stop limpieza-etl; docker rm limpieza-etl
+
+# Multilínea en PowerShell (usa backtick ` al final de cada línea si prefieres dividirla):
+```
+docker run -d --name limpieza-etl `
+    -v "${PWD}\Extract\Files:/app/Extract/Files" `
+    -v "${PWD}\Docs:/app/Docs" `
+    limpieza-etl:latest
+```
+
+### 4) Depuración: conectar un IDE (VS Code) con debugpy
+
+Si quieres depurar paso a paso desde Visual Studio Code, hay dos opciones:
+
+- Opción A (rápida, sin rebuild): instalar `debugpy` localmente y ejecutar el contenedor sobrescribiendo el comando para lanzar `debugpy`.
+
+```powershell
+# Single-line (PowerShell)
+docker run --rm -p 5678:5678 -v "${PWD}:/app" -v "${PWD}\Extract\Files:/app/Extract/Files" -v "${PWD}\Docs:/app/Docs" limpieza-etl:latest python -m debugpy --listen 0.0.0.0:5678 --wait-for-client main.py
+
+# Multilínea PowerShell (usa backtick `):
+```
+docker run --rm -p 5678:5678 `
+    -v "${PWD}:/app" `
+    -v "${PWD}\Extract\Files:/app/Extract/Files" `
+    -v "${PWD}\Docs:/app/Docs" `
+    limpieza-etl:latest `
+    python -m debugpy --listen 0.0.0.0:5678 --wait-for-client main.py
+```
+
+Antes de usar la opción A, si `debugpy` no está en tu `requirements.txt`, puedes instalarlo temporalmente dentro del contenedor con:
+
+```powershell
+docker run --rm -it limpieza-etl:latest bash -c "pip install debugpy && python -m debugpy --listen 0.0.0.0:5678 --wait-for-client main.py"
+```
+
+- Opción B (recomendada para desarrollo): añadir `debugpy` a `requirements.txt` o crear un `requirements-dev.txt` y reconstruir la imagen. Luego usa el comando mostrado arriba (con el puerto publicado) para arrancar el contenedor y conectar tu IDE.
+
+Configura VS Code (launch.json) con un attach así:
+
+```json
+{
+    "name": "Attach to Docker (debugpy)",
+    "type": "python",
+    "request": "attach",
+    "connect": { "host": "localhost", "port": 5678 },
+    "pathMappings": [ { "localRoot": "${workspaceFolder}", "remoteRoot": "/app" } ]
+}
+```
+
+Pasos rápidos para depurar:
+1. Construye la imagen si añadiste `debugpy`.
+2. Ejecuta el contenedor publicando el puerto 5678 (ver comando arriba).
+3. En VS Code, ejecuta la configuración "Attach to Docker (debugpy)".
+4. El contenedor está detenido en el arranque hasta que el IDE se conecte (por `--wait-for-client`).
+
+### 5) Problemas comunes
+
+- Permisos: el Dockerfile crea un usuario `appuser` y fija propiedad sobre `/app`; si montas el directorio del host el UID/GID pueden diferir. En ese caso, ejecuta el contenedor en modo root temporalmente (no recomendado en producción) o ajusta permisos en el host.
+- Fuentes/Gráficas: ya instalamos `fonts-dejavu`, pero si faltan tipografías en tu sistema, las imágenes pueden verse distintas.
+- Dependencias nativas: si alguna librería de Python necesitara paquetes del sistema adicionales, añádelos al `Dockerfile` con `apt-get install`.
+
+
+## �🛑 Salida y artefactos 
 
 - CSV limpio: `Extract/Files/output_clean.csv`
 - Base de datos SQLite: `Extract/Files/Limpieza.db` (tabla `Limpieza_data`)
